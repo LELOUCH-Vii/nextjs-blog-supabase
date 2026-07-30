@@ -25,7 +25,23 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const path = request.nextUrl.pathname
+  const isAuthPage = path === '/login'
+  const isCompleteProfilePage = path === '/complete-profile'
+
+  if (user && !isAuthPage && !isCompleteProfilePage) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.username) {
+      return NextResponse.redirect(new URL('/complete-profile', request.url))
+    }
+  }
 
   return response
 }
